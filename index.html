@@ -1,0 +1,431 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Basic E‑commerce — Product Listing</title>
+  <style>
+    /* Simple reset */
+    *{box-sizing:border-box;margin:0;padding:0;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial}
+    body{background:#f5f7fb;color:#111;line-height:1.4}
+    a{color:inherit;text-decoration:none}/* Header */
+header{background:linear-gradient(90deg,#2b6cb0,#90cdf4);color:white;padding:18px 20px;display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:12px}
+.brand .logo{width:44px;height:44px;border-radius:10px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-weight:700}
+.search{flex:1;margin:0 20px}
+.search input{width:100%;padding:10px 12px;border-radius:8px;border:none}
+.actions{display:flex;gap:12px;align-items:center}
+.btn{background:rgba(255,255,255,0.15);border:none;padding:8px 12px;border-radius:8px;color:white;cursor:pointer}
+
+/* Layout */
+.container{max-width:1100px;margin:20px auto;padding:0 16px}
+.layout{display:grid;grid-template-columns:240px 1fr;gap:18px}
+
+/* Categories */
+.categories{background:white;padding:14px;border-radius:10px;box-shadow:0 6px 18px rgba(16,24,40,0.06)}
+.categories h4{margin-bottom:10px}
+.category-list{display:flex;flex-direction:column;gap:8px}
+.category-item{padding:10px;border-radius:8px;cursor:pointer;border:1px solid transparent}
+.category-item.active{background:#2b6cb0;color:white;border-color:#2b6cb0}
+
+/* Filters */
+.filters{background:white;padding:14px;border-radius:10px;box-shadow:0 6px 18px rgba(16,24,40,0.06);margin-top:12px}
+.filters label{display:block;font-size:13px;margin:8px 0}
+.range-row{display:flex;gap:8px}
+.range-row input{flex:1;padding:8px;border-radius:8px;border:1px solid #e6eef6}
+.apply-btn{margin-top:10px;background:#2b6cb0;color:white;border:none;padding:8px 10px;border-radius:8px;cursor:pointer}
+
+/* Product grid */
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.card{background:white;border-radius:12px;padding:12px;box-shadow:0 6px 18px rgba(16,24,40,0.06);display:flex;flex-direction:column}
+.thumb{height:160px;border-radius:8px;background:#f0f4f8;display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+.thumb img{max-width:100%;max-height:100%;object-fit:contain}
+.title{font-weight:600;margin-bottom:6px}
+.price{font-weight:700;color:#2b6cb0;margin-bottom:8px}
+.card .meta{display:flex;justify-content:space-between;align-items:center;margin-top:auto}
+.add{background:#1f2937;color:white;padding:8px 10px;border-radius:8px;border:none;cursor:pointer}
+
+/* Modal / detail */
+.modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,0.6);display:none;align-items:center;justify-content:center;padding:20px}
+.modal{background:white;border-radius:12px;max-width:900px;width:100%;padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.modal .big-img{height:380px;border-radius:10px;background:#f3f6fb;display:flex;align-items:center;justify-content:center}
+.close{position:absolute;right:18px;top:18px;background:#111;color:white;border:none;border-radius:8px;padding:6px 8px}
+
+/* Cart drawer */
+.cart-btn{position:relative}
+.cart-count{position:absolute;top:-6px;right:-6px;background:#ff6b6b;color:white;border-radius:999px;padding:3px 7px;font-size:12px}
+.drawer{position:fixed;right:0;top:0;height:100vh;width:360px;background:white;box-shadow:-12px 0 30px rgba(0,0,0,0.12);transform:translateX(100%);transition:transform .28s ease}
+.drawer.open{transform:translateX(0)}
+.drawer .head{padding:16px;border-bottom:1px solid #eef2f8;display:flex;justify-content:space-between;align-items:center}
+.drawer .items{padding:14px;overflow:auto;height:calc(100vh - 150px)}
+.drawer .checkout{padding:14px;border-top:1px solid #eef2f8}
+
+/* Responsive */
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr;}
+  .grid{grid-template-columns:repeat(2,1fr)}
+  .modal{grid-template-columns:1fr}
+  .container{padding:0 12px}
+}
+@media (max-width:520px){
+  .grid{grid-template-columns:1fr}
+  .search{display:none}
+  header{padding:12px}
+}
+
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo">EC</div>
+      <div>
+        <div style="font-weight:700">MiniShop</div>
+        <div style="font-size:12px;opacity:0.9">A simple demo store</div>
+      </div>
+    </div><div class="search"><input id="searchInput" placeholder="Search products..." /></div>
+
+<div class="actions">
+  <button id="viewAll" class="btn">All</button>
+  <button id="cartOpen" class="btn cart-btn">Cart <span id="cartCount" class="cart-count">0</span></button>
+</div>
+
+  </header>  <main class="container">
+    <div class="layout">
+      <aside>
+        <div class="categories">
+          <h4>Categories</h4>
+          <div id="categoryList" class="category-list"></div>
+        </div><div class="filters">
+      <h4>Filters</h4>
+      <label>Price range</label>
+      <div class="range-row">
+        <input id="minPrice" type="number" placeholder="Min" />
+        <input id="maxPrice" type="number" placeholder="Max" />
+      </div>
+
+      <label>Color</label>
+      <div>
+        <label><input type="checkbox" class="color-filter" value="black" /> Black</label><br>
+        <label><input type="checkbox" class="color-filter" value="white" /> White</label><br>
+        <label><input type="checkbox" class="color-filter" value="blue" /> Blue</label>
+      </div>
+
+      <button id="applyFilters" class="apply-btn">Apply</button>
+      <button id="clearFilters" class="apply-btn" style="background:#e2e8f0;color:#111;margin-left:8px">Clear</button>
+    </div>
+  </aside>
+
+  <section>
+    <div class="topbar">
+      <div id="activeCategoryTitle">All Products</div>
+      <div>
+        <label>Sort:</label>
+        <select id="sortSelect">
+          <option value="default">Default</option>
+          <option value="price-asc">Price: Low → High</option>
+          <option value="price-desc">Price: High → Low</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="productGrid" class="grid"></div>
+  </section>
+</div>
+
+  </main>  <!-- Modal for product details -->  <div id="modal" class="modal-backdrop">
+    <div class="modal" role="dialog" aria-modal="true">
+      <button id="closeModal" class="close">X</button>
+      <div>
+        <div id="modalImage" class="big-img"></div>
+      </div>
+      <div>
+        <h2 id="modalTitle"></h2>
+        <p id="modalCategory" style="opacity:0.8"></p>
+        <p id="modalPrice" style="font-weight:700;font-size:18px;margin:8px 0"></p>
+        <p id="modalDesc" style="opacity:0.9;margin-bottom:12px"></p>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button id="modalAdd" class="add">Add to cart</button>
+          <button id="modalClose" class="btn">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>  <!-- Cart drawer -->  <div id="drawer" class="drawer">
+    <div class="head">
+      <h3>Shopping Cart</h3>
+      <button id="closeDrawer" class="btn">Close</button>
+    </div>
+    <div id="cartItems" class="items"></div>
+    <div class="checkout">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px"><b>Total</b><span id="cartTotal">₹0</span></div>
+      <button id="checkoutBtn" class="apply-btn" style="width:100%">Checkout</button>
+    </div>
+  </div>  <script>
+    // -----------------
+    // Sample product data
+    // -----------------
+    const products = [
+  {
+    id: 1,
+    name: "Wireless headphones",
+    category: "Electronics",
+    price: 2499,
+    color: "black",
+    image: "images/Wireless_headphones.jpg",
+    desc: "Comfortable over-ear wireless headphones with long battery life."
+  },
+  {
+    id: 2,
+    name: "Smart watch",
+    category: "Electronics",
+    price: 3999,
+    color: "white",
+    image: "images/Smart_watches.jpg",
+    desc: "Track workouts, notifications, and health metrics."
+  },
+  {
+    id: 3,
+    name: "Denim jacket",
+    category: "Clothing",
+    price: 1999,
+    color: "blue",
+    image: "images/Denim_jacket.jpg",
+    desc: "Classic denim jacket — stylish and warm."
+  },
+  {
+    id: 4,
+    name: "Sneakers",
+    category: "Clothing",
+    price: 2999,
+    color: "white",
+    image: "images/Sneakers.jpg",
+    desc: "Comfortable sneakers for everyday wear."
+  },
+  {
+    id: 5,
+    name: "Leatherwallet",
+    category: "Accessories",
+    price: 799,
+    color: "black",
+    image: "images/Leather_wallet.jpg",
+    desc: "Slim leather wallet with multiple card slots."
+  }
+];
+    // -----------------
+    // State and DOM refs
+    // -----------------
+    const state = {
+      activeCategory: 'All',
+      filters: { minPrice:null, maxPrice:null, colors:[] },
+      sort: 'default',
+      search: '',
+      cart: loadCart()
+    };
+
+    const categoryListEl = document.getElementById('categoryList');
+    const productGridEl = document.getElementById('productGrid');
+    const activeCategoryTitle = document.getElementById('activeCategoryTitle');
+    const cartCountEl = document.getElementById('cartCount');
+
+    // Modal refs
+    const modal = document.getElementById('modal');
+    const modalImage = document.getElementById('modalImage');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalPrice = document.getElementById('modalPrice');
+    const modalDesc = document.getElementById('modalDesc');
+    const modalAdd = document.getElementById('modalAdd');
+
+    // Drawer refs
+    const drawer = document.getElementById('drawer');
+    const cartItemsEl = document.getElementById('cartItems');
+    const cartTotalEl = document.getElementById('cartTotal');
+
+    // -----------------
+    // Init
+    // -----------------
+    const categories = ['All',...Array.from(new Set(products.map(p=>p.category)))];
+    renderCategories();
+    renderProducts();
+    updateCartUI();
+
+    // -----------------
+    // Render functions
+    // -----------------
+    function renderCategories(){
+      categoryListEl.innerHTML = '';
+      categories.forEach(cat=>{
+        const div = document.createElement('div');
+        div.className = 'category-item'+(state.activeCategory===cat?' active':'');
+        div.textContent = cat;
+        div.onclick = ()=>{ state.activeCategory = cat; document.querySelectorAll('.category-item').forEach(x=>x.classList.remove('active')); div.classList.add('active'); activeCategoryTitle.textContent = cat==='All'?'All Products':cat; renderProducts(); }
+        categoryListEl.appendChild(div);
+      })
+    }
+
+    function renderProducts(){
+      productGridEl.innerHTML = '';
+      let list = products.slice();
+
+      // Category
+      if(state.activeCategory !== 'All') list = list.filter(p=>p.category===state.activeCategory);
+
+      // Search
+      const s = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+      if(s) list = list.filter(p=>p.name.toLowerCase().includes(s) || p.desc.toLowerCase().includes(s));
+
+      // Filters
+      const min = state.filters.minPrice;
+      const max = state.filters.maxPrice;
+      if(min != null) list = list.filter(p=>p.price >= min);
+      if(max != null) list = list.filter(p=>p.price <= max);
+      if(state.filters.colors.length) list = list.filter(p=>state.filters.colors.includes(p.color));
+
+      // Sort
+      if(state.sort==='price-asc') list.sort((a,b)=>a.price-b.price);
+      if(state.sort==='price-desc') list.sort((a,b)=>b.price-a.price);
+
+      // Render
+      list.forEach(p=>{
+        const card = document.createElement('article');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="thumb"><img src="${p.image}" alt="${p.name}" /></div>
+          <div class="title">${p.name}</div>
+          <div class="price">₹${p.price.toLocaleString()}</div>
+          <div class="meta">
+            <button class="btn viewBtn">View</button>
+            <button class="add">Add</button>
+          </div>
+        `;
+        // View
+        card.querySelector('.viewBtn').onclick = ()=>openModal(p.id);
+        // Add
+        card.querySelector('.add').onclick = ()=>{ addToCart(p.id); };
+        productGridEl.appendChild(card);
+      })
+
+      if(list.length===0){ productGridEl.innerHTML = '<div style="grid-column:1/-1;padding:30px;background:white;border-radius:12px;text-align:center">No products match the filters.</div>' }
+    }
+
+    // -----------------
+    // Filters UI
+    // -----------------
+    document.getElementById('applyFilters').addEventListener('click',()=>{
+      const min = parseFloat(document.getElementById('minPrice').value);
+      const max = parseFloat(document.getElementById('maxPrice').value);
+      state.filters.minPrice = isFinite(min)?min:null;
+      state.filters.maxPrice = isFinite(max)?max:null;
+      const colors = Array.from(document.querySelectorAll('.color-filter:checked')).map(i=>i.value);
+      state.filters.colors = colors;
+      renderProducts();
+    })
+    document.getElementById('clearFilters').addEventListener('click',()=>{
+      document.getElementById('minPrice').value = '';
+      document.getElementById('maxPrice').value = '';
+      document.querySelectorAll('.color-filter').forEach(i=>i.checked=false);
+      state.filters = {minPrice:null,maxPrice:null,colors:[]};
+      renderProducts();
+    })
+
+    // Search & sort
+    document.getElementById('searchInput').addEventListener('input',()=>{ renderProducts(); });
+    document.getElementById('sortSelect').addEventListener('change',(e)=>{ state.sort = e.target.value; renderProducts(); });
+
+    // View all
+    document.getElementById('viewAll').addEventListener('click',()=>{ state.activeCategory='All'; document.querySelectorAll('.category-item').forEach(x=>x.classList.remove('active')); document.querySelector('.category-item').classList.add('active'); activeCategoryTitle.textContent='All Products'; renderProducts(); })
+
+    // -----------------
+    // Modal detail
+    // -----------------
+    let currentModalProductId = null;
+    function openModal(id){
+      const p = products.find(x=>x.id===id);
+      if(!p) return;
+      currentModalProductId = id;
+      modalImage.innerHTML = `<img src="${p.image}" style="max-width:100%;max-height:100%;object-fit:contain"/>`;
+      modalTitle.textContent = p.name;
+      modalPrice.textContent = '₹'+p.price.toLocaleString();
+      modalDesc.textContent = p.desc;
+      modal.style.display = 'flex';
+    }
+    document.getElementById('closeModal').addEventListener('click',()=>modal.style.display='none');
+    document.getElementById('modalClose').addEventListener('click',()=>modal.style.display='none');
+    document.getElementById('modalAdd').addEventListener('click',()=>{ if(currentModalProductId) addToCart(currentModalProductId); modal.style.display='none';});
+
+    // Close modal on backdrop click
+    modal.addEventListener('click',(e)=>{ if(e.target===modal) modal.style.display='none'; });
+
+    // -----------------
+    // Cart logic
+    // -----------------
+    function loadCart(){
+      try{ const raw = localStorage.getItem('minishop_cart'); return raw?JSON.parse(raw):[] }catch(e){return[]}
+    }
+    function saveCart(){ localStorage.setItem('minishop_cart', JSON.stringify(state.cart)); }
+
+    function addToCart(id){
+      const item = state.cart.find(i=>i.id===id);
+      if(item) item.qty += 1; else state.cart.push({id,qty:1});
+      saveCart();
+      updateCartUI();
+      alert('Added to cart');
+    }
+
+    function updateCartUI(){
+      const totalQty = state.cart.reduce((s,i)=>s+i.qty,0);
+      cartCountEl.textContent = totalQty;
+
+      cartItemsEl.innerHTML = '';
+      if(state.cart.length===0){ cartItemsEl.innerHTML = '<div style="padding:16px;opacity:0.85">Cart is empty</div>'; cartTotalEl.textContent='₹0'; return; }
+
+      let total = 0;
+      state.cart.forEach(ci=>{
+        const p = products.find(x=>x.id===ci.id);
+        if(!p) return;
+        total += p.price * ci.qty;
+        const el = document.createElement('div');
+        el.style.display='flex'; el.style.gap='10px'; el.style.marginBottom='12px';
+        el.innerHTML = `
+          <img src="${p.image}" style="width:72px;height:56px;object-fit:cover;border-radius:8px" />
+          <div style="flex:1">
+            <div style="font-weight:600">${p.name}</div>
+            <div style="opacity:0.8">₹${p.price.toLocaleString()}</div>
+            <div style="margin-top:6px;display:flex;gap:6px;align-items:center">
+              <button class="qtyminus">-</button>
+              <div class="qty">${ci.qty}</div>
+              <button class="qtyplus">+</button>
+              <button class="remove" style="margin-left:12px;background:transparent;border:1px solid #eee;padding:6px;border-radius:6px">Remove</button>
+            </div>
+          </div>
+        `;
+        // events
+        el.querySelector('.qtyplus').addEventListener('click',()=>{ ci.qty+=1; saveCart(); updateCartUI(); });
+        el.querySelector('.qtyminus').addEventListener('click',()=>{ if(ci.qty>1) ci.qty-=1; else state.cart = state.cart.filter(x=>x.id!==ci.id); saveCart(); updateCartUI(); });
+        el.querySelector('.remove').addEventListener('click',()=>{ state.cart = state.cart.filter(x=>x.id!==ci.id); saveCart(); updateCartUI(); });
+
+        cartItemsEl.appendChild(el);
+      })
+      cartTotalEl.textContent = '₹'+total.toLocaleString();
+    }
+
+    // Drawer open/close
+    document.getElementById('cartOpen').addEventListener('click',()=>{ drawer.classList.add('open'); });
+    document.getElementById('closeDrawer').addEventListener('click',()=>{ drawer.classList.remove('open'); });
+
+    document.getElementById('checkoutBtn').addEventListener('click', ()=>{ alert('Checkout flow not implemented in this demo.'); });
+
+    // Small UX fixes
+    // close drawer if click outside (mobile) - optional
+
+    // -----------------
+    // Extra: keyboard shortcut for cart (for demo)
+    // -----------------
+    window.addEventListener('keydown', (e)=>{ if(e.key==='c'){ drawer.classList.toggle('open'); } });
+
+    // Make sure category active highlight matches state at start
+    document.querySelectorAll('.category-item')[0]?.classList.add('active');
+
+  </script></body>
+</html>
